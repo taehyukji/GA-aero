@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>날개 면적비 계산기</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="workspace" aria-label="날개 면적비 계산기">
+      <form class="input-panel" id="wingForm">
+        <div class="title-row">
+          <div>
+            <p class="eyebrow">Wing Ratio Lab</p>
+            <h1>날개 면적비 계산기</h1>
+          </div>
+          <output class="ratio-badge" id="ratioBadge">AR -</output>
+        </div>
+
+        <div class="field">
+          <label for="wingType">날개 종류</label>
+          <select id="wingType" name="wingType">
+            <option value="delta">델타익</option>
+            <option value="swept">후퇴익</option>
+            <option value="forward">전진익</option>
+            <option value="tapered">테이퍼익</option>
+            <option value="elliptical">타원익</option>
+          </select>
+        </div>
+
+        <div class="field-grid">
+          <div class="field">
+            <label for="span">날개폭 b (m) <output id="spanReadout">10.00</output></label>
+            <input id="span" name="span" type="number" min="0.01" step="0.01" value="10">
+            <input id="spanSlider" type="range" min="2" max="40" step="0.01" value="10" aria-label="날개폭 슬라이더">
+          </div>
+          <div class="field">
+            <label for="rootChord">루트 시위 c_r (m) <output id="rootChordReadout">2.40</output></label>
+            <input id="rootChord" name="rootChord" type="number" min="0.01" step="0.01" value="2.4">
+            <input id="rootChordSlider" type="range" min="0.2" max="8" step="0.01" value="2.4" aria-label="루트 시위 슬라이더">
+          </div>
+        </div>
+
+        <div class="field-grid">
+          <div class="field" id="tipChordField">
+            <label for="tipChord">팁 시위 c_t (m) <output id="tipChordReadout">1.10</output></label>
+            <input id="tipChord" name="tipChord" type="number" min="0" step="0.01" value="1.1">
+            <input id="tipChordSlider" type="range" min="0" max="8" step="0.01" value="1.1" aria-label="팁 시위 슬라이더">
+          </div>
+          <div class="field" id="sweepField">
+            <label for="sweepAngle">스윕각 Λ (deg) <output id="sweepAngleReadout">28.0</output></label>
+            <input id="sweepAngle" name="sweepAngle" type="number" min="-70" max="70" step="0.1" value="28">
+            <input id="sweepAngleSlider" type="range" min="-70" max="70" step="0.1" value="28" aria-label="스윕각 슬라이더">
+          </div>
+        </div>
+
+        <p class="note" id="inputNote">입력값을 바꾸면 결과가 바로 갱신됩니다.</p>
+        <p class="warning" id="warning" role="alert"></p>
+      </form>
+
+      <section class="visual-panel" aria-label="날개 형상 미리보기">
+        <div class="wing-stage">
+          <svg id="wingPreview" viewBox="0 -28 420 248" role="img" aria-label="선택한 날개의 평면 형상">
+            <defs>
+              <marker id="arrowHead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z"></path>
+              </marker>
+            </defs>
+            <polygon id="leftWing" points="210,56 126.48,29.12 36,52 36,56 126.48,132.88 210,164"></polygon>
+            <polygon id="rightWing" points="210,56 293.52,29.12 384,52 384,56 293.52,132.88 210,164"></polygon>
+            <g class="fuselage" aria-hidden="true" transform="translate(210 110) scale(1.18) translate(-210 -110)">
+              <path class="body" d="M210 19 C225 43 230 79 227 112 C225 145 219 178 210 199 C201 178 195 145 193 112 C190 79 195 43 210 19 Z"></path>
+              <path class="cockpit" d="M210 41 C218 53 221 69 219 82 C216 88 204 88 201 82 C199 69 202 53 210 41 Z"></path>
+              <path class="tail-wing" d="M210 159 L238 190 L216 185 L210 201 L204 185 L182 190 Z"></path>
+              <line class="center-detail" x1="210" y1="92" x2="210" y2="170"></line>
+            </g>
+            <line class="flight-arrow" x1="210" y1="10" x2="210" y2="-20"></line>
+          </svg>
+        </div>
+      </section>
+
+      <section class="result-panel" aria-live="polite">
+        <div class="metric-grid">
+          <article class="metric">
+            <span>날개 면적</span>
+            <strong id="areaValue">-</strong>
+          </article>
+          <article class="metric">
+            <span>테이퍼 비</span>
+            <strong id="taperValue">-</strong>
+          </article>
+        </div>
+
+        <div class="score-list">
+          <div class="score-row">
+            <b>속도</b>
+            <div class="bar"><div class="fill" id="speedBar"></div></div>
+            <output id="speedValue">-</output>
+          </div>
+          <div class="score-row">
+            <b>기동성</b>
+            <div class="bar"><div class="fill" id="maneuverabilityBar"></div></div>
+            <output id="maneuverabilityValue">-</output>
+          </div>
+          <div class="score-row">
+            <b>연료 효율</b>
+            <div class="bar"><div class="fill" id="fuelBar"></div></div>
+            <output id="fuelValue">-</output>
+          </div>
+          <div class="score-row">
+            <b>안정성</b>
+            <div class="bar"><div class="fill" id="stabilityBar"></div></div>
+            <output id="stabilityValue">-</output>
+          </div>
+          <div class="score-row overall-row">
+            <b>종합점수</b>
+            <div class="bar"><div class="fill" id="overallBar"></div></div>
+            <output id="overallValue">-</output>
+          </div>
+        </div>
+
+        <section class="graph-panel" aria-label="종합점수 곡선 그래프">
+          <div class="graph-title">
+            <span>종합점수 곡선</span>
+            <strong id="graphScore">-</strong>
+          </div>
+          <svg class="score-graph" viewBox="0 0 640 220" role="img" aria-label="면적비에 따른 종합점수 곡선">
+            <line class="graph-grid" x1="58" y1="24" x2="58" y2="172"></line>
+            <line class="graph-grid" x1="58" y1="172" x2="600" y2="172"></line>
+            <line class="graph-guide" x1="58" y1="98" x2="600" y2="98"></line>
+            <path id="scoreCurve" class="score-curve" d=""></path>
+            <circle id="minPoint" class="limit-point min-point" r="5" cx="58" cy="172"></circle>
+            <circle id="maxPoint" class="limit-point max-point" r="5" cx="600" cy="24"></circle>
+            <circle id="currentPoint" class="current-point" r="8" cx="58" cy="172"></circle>
+            <text class="axis-label" x="58" y="204">낮은 AR</text>
+            <text class="axis-label" x="548" y="204">높은 AR</text>
+            <text class="axis-label" x="18" y="31">100</text>
+            <text class="axis-label" x="26" y="176">0</text>
+            <text id="minLabel" class="point-label" x="70" y="166">min</text>
+            <text id="maxLabel" class="point-label" x="492" y="34">max</text>
+            <text id="currentLabel" class="current-label" x="70" y="154">현재</text>
+          </svg>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <script src="./calculator.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
